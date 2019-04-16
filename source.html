@@ -1,0 +1,184 @@
+<meta charset="utf-8"><meta name="description" content="CSUSB GPA Calculator"><meta name="author" content="SitePoint"><script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous">
+	</script>
+<style type="text/css">
+</style>
+<form id="gpa-calc">
+	<table align="center" border="1" cellpadding="1" cellspacing="1" id="gpa-input" style="width:100%;">
+		<thead>
+			<tr>
+				<th scope="col">Courses</th>
+				<th scope="col"># of Units</th>
+				<th scope="col">Letter Grade</th>
+				<th scope="col">Grade Points</th>
+				<th scope="col"></th>
+			</tr>
+		</thead>
+		<tbody id="csusb-gpa">
+			<tr id="1">
+				<td><input id="course-1" onblur="if (this.value == '') {this.value = 'Course';}" onfocus="if (this.value == 'Course') {this.value = '';}" title="Course 1" type="text" value="Course"></td>
+				<td><input class="units" id="units-course-1" maxlength="5" onblur="if (this.value == '') {this.value = '0';}" onfocus="if (this.value == '0') {this.value = '';}" onfocusout="calcCSUSB()" oninput="calcCSUSB()" onkeypress="return isNumberKey(event)" title="Enter your units for course 1." type="text" value="0"></td>
+				<td><select class="grade" id="grade-course-1" onchange="calcCSUSB()" title="Grade for Course 1"><option value="">--</option><option value="A">A</option><option value="A-">A-</option><option value="B+">B+</option><option value="B">B</option><option value="B-">B-</option><option value="C+">C+</option><option value="C">C</option><option value="C-">C-</option><option value="D+">D+</option><option value="D">D</option><option value="D-">D-</option><option value="F">F</option> </select></td>
+				<td><input class="grade-points" disabled="disabled" id="grade-points-course-1" maxlength="5" title="Grade Points for Course 1" type="text"></td>
+				<td style="text-align: center;"></td>
+			</tr>
+		</tbody>
+	</table>
+
+	<div><input id="btnAddRow" onclick="addCourse(2)" title="Add another course" type="button" value="Add Course"></div>
+	&nbsp;
+
+	<table align="center" cellpadding="1" cellspacing="1" id="average-total" style="width:100%;">
+		<thead>
+			<tr>
+				<th scope="col">Total # of Units</th>
+				<th scope="col">Grade Point Average</th>
+				<th scope="col">Total Grade Points</th>
+				<th scope="col"></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><input class="units" disabled="disabled" id="total-quarter-units" maxlength="4" title="Total Quarter Units" type="text"></td>
+				<td><input class="gpa" disabled="disabled" id="total-quarter-gpa" maxlength="6" title="Total Quarter GPA" type="text"></td>
+				<td><input class="grade-points" disabled="disabled" id="total-quarter-cumulative-grade-points" maxlength="5" title="Total Quarter Cumulative Grade Points" type="text"></td>
+				<td style="text-align: center;"><input id="reset-quarter" title="Reset Quarter" type="reset" value="Reset"></td>
+			</tr>
+		</tbody>
+	</table>
+</form>
+<script>
+
+var gp_scale = 
+{
+	'A+': 4.0,
+	'A': 4.0,
+	'A-': 3.7,
+	'B+': 3.3,
+	'B': 3.0,
+	'B-': 2.7,
+	'C+': 2.3,
+	'C': 2.0,
+	'C-': 1.7,
+	'D+': 1.3,
+	'D': 1.0,
+	'D-': 0.7,
+	'F': 0 
+};
+
+function isNumberKey(evt) 
+{
+	var charCode = (evt.which) ? evt.which : event.keyCode;
+	if (charCode != 46 && charCode > 31
+		&& (charCode < 48 || charCode > 57))
+		return false;
+	return true;
+}
+
+function addCourse(element)
+{//create next row
+
+	var rowID = element;
+	var courseIDText = "course-" + rowID;
+	
+	//create html string. Adds another row to table with updated id and title
+	var rowText = 
+		'<tr id="' + rowID + '"><td><input id="' + courseIDText + '" title="Course ' 
+    + rowID + '" type="text" value="Course" onblur="if (this.value == '
+    + "'') {this.value = 'Course';}"
+    + '" onfocus="if (this.value == '
+    + "'Course') {this.value = '';}"
+    +'"></input></td><td><input id="units-course-' 
+    + rowID + '" class="units" type="text" value="0" maxlength="5" onblur="if (this.value == ' 
+    + "''){this.value = '0';}" 
+		+ '" onfocus="if (this.value == ' + "'0') {this.value = '';}" 
+    + '" onkeypress="return isNumberKey(event)" onfocusout="calcCSUSB()" oninput="calcCSUSB()" title="Enter your units for course ' + rowID 
+    + '."></input></td><td><select id="grade-course-' + rowID 
+    + '" class="grade" title="Grade for Course ' + rowID 
+		+ '" onchange="calcCSUSB()"><option value="">--</option><option value="A">A</option><option value="A-">A-</option><option value="B+">B+</option><option value="B">B</option><option value="B-">B-</option><option value="C+">C+</option><option value="C">C</option><option value="C-">C-</option><option value="D+">D+</option><option value="D">D</option><option value="D-">D-</option><option value="F">F</option> </select></td>'
+		+ '<td><input id="grade-points-course-' + rowID 
+    + '" class="grade-points" disabled="disabled" maxlength="5" title="Grade Points for Course '
+		+ rowID + '" type="text"></td><td><input  id="remove-course-' + rowID
+    + '" title="Remove Course ' + rowID 
+    + '" type="button" onclick="removeCourse(this)" value="Remove Course"></td></tr>';
+		
+	$("#csusb-gpa").append(rowText);
+	//update onclick function of button and the new parameter
+	rowID++;
+	$("#btnAddRow").attr("onclick", "addCourse('"+rowID+"')");
+	courseIDText = "#" + courseIDText;
+	$(courseIDText).focus();
+}
+
+function removeCourse(element)
+{
+	$(element).parents("tr").remove();
+	calcCSUSB();
+}
+
+function calcCSUSB()
+{//grab each unit and grade value from each row and calculate CSUSB GPA
+
+	var unitTotal 		= 0;
+	var gradePointTotal = 0;
+	
+	$("#csusb-gpa tr").each(function()
+	{	
+		//gather units
+		var units = parseFloat($(this).find(".units").val());
+        unitTotal += units;
+        //gather grade-points
+		var gradePoints = $(this).find(".grade-points");
+		var grade = parseFloat(gp_scale[$(this).find(".grade").val()]);
+		
+		//check for grade entry
+		if(grade >= 0 && grade <= 4.0)
+		{	
+			var total = units * grade;
+			gradePoints.val(total.toFixed(1));
+			gradePointTotal	+= parseFloat(gradePoints.val());
+		}
+		else
+		{
+            grade = 0;
+	}
+	});
+//display in proper fields
+	$("#average-total .units").val(unitTotal);
+	$("#average-total .grade-points").val(gradePointTotal.toFixed(2));
+	
+	//check for invalid math
+	if(unitTotal != 0)
+	{
+		var gpa = parseFloat(gradePointTotal / unitTotal);
+		$("#average-total .gpa").val(gpa.toFixed(2));
+	}
+	else
+	{
+		$("#average-total .gpa").val('0');
+	}
+}
+
+	
+(function($) {
+	// Handle 'Reset' button click for CSUSB GPA table
+	$('#average-total input[type="reset"]').click(function(e) 
+	{
+    e.preventDefault();
+		$(this).closest('tr').find('input[type="text"], select').val('');             // clear Total GPA fields
+		$('#csusb-gpa input[type="button"]').each(function(){ removeCourse(this); }); // Remove all rows except first
+    //clear values in first row
+		$('#csusb-gpa #course-1').val('Course');                                      
+    $('#csusb-gpa .units').val('0');
+    $('#csusb-gpa .grade').val('');
+    $('#csusb-gpa .grade-points').val('');
+		
+    $("#btnAddRow").attr("onclick", "addCourse(2)"); //resets course counter	
+	})
+function calculateFinalGPA() {
+		// Account for units from the current term, if they exist
+		var total_units = $('#average-total .units').val() ? parseFloat($('#average-total .units').val()) : 0;
+// Account for grade points from current term, if they exist
+		var final_gp = $('#average-total .grade-points').val() ? parseFloat($('#average-total .grade-points').val()) : 0;
+}
+})(jQuery);
+</script>
